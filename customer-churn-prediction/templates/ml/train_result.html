@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Training Results</h2>
+    <a href="{{ url_for('ml.predict_single') }}" class="btn btn-primary shadow-sm"><i class="bi bi-graph-up-arrow"></i> Go to Prediction</a>
+</div>
+
+<div class="alert alert-success shadow-sm mb-4">
+    <i class="bi bi-check-circle-fill me-2"></i> Model <strong>{{ metrics.best_model }}</strong> was successfully trained and saved.
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-white border-0 shadow-sm h-100 border-start border-primary border-5">
+            <div class="card-body">
+                <h6 class="text-muted fw-bold">Accuracy</h6>
+                <h3 class="fw-bold mb-0 text-primary">{{ "%.2f"|format(metrics.accuracy * 100) }}%</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-white border-0 shadow-sm h-100 border-start border-success border-5">
+            <div class="card-body">
+                <h6 class="text-muted fw-bold">Precision</h6>
+                <h3 class="fw-bold mb-0 text-success">{{ "%.2f"|format(metrics.precision * 100) }}%</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-white border-0 shadow-sm h-100 border-start border-warning border-5">
+            <div class="card-body">
+                <h6 class="text-muted fw-bold">Recall</h6>
+                <h3 class="fw-bold mb-0 text-warning">{{ "%.2f"|format(metrics.recall * 100) }}%</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-white border-0 shadow-sm h-100 border-start border-info border-5">
+            <div class="card-body">
+                <h6 class="text-muted fw-bold">F1 Score</h6>
+                <h3 class="fw-bold mb-0 text-info">{{ "%.2f"|format(metrics.f1_score * 100) }}%</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white pt-4 pb-2 border-bottom">
+                <h6 class="fw-bold"><i class="bi bi-grid-3x3 me-2 text-primary"></i>Confusion Matrix</h6>
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <div class="text-center">
+                    <table class="table table-bordered mb-0" style="width: 250px;">
+                        <tr>
+                            <td class="bg-light"></td>
+                            <td class="bg-light fw-bold">Pred No</td>
+                            <td class="bg-light fw-bold">Pred Yes</td>
+                        </tr>
+                        <tr>
+                            <td class="bg-light fw-bold">Actual No</td>
+                            <td class="bg-success text-white fs-4 fw-bold">{{ metrics.confusion_matrix[0][0] }}</td>
+                            <td class="bg-danger text-white fs-4 fw-bold opacity-75">{{ metrics.confusion_matrix[0][1] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="bg-light fw-bold">Actual Yes</td>
+                            <td class="bg-danger text-white fs-4 fw-bold opacity-75">{{ metrics.confusion_matrix[1][0] }}</td>
+                            <td class="bg-success text-white fs-4 fw-bold">{{ metrics.confusion_matrix[1][1] }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white pt-4 pb-2 border-bottom">
+                <h6 class="fw-bold"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>Feature Importance (Top 10)</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="featureImportanceChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const featuresData = {{ metrics.feature_importance | tojson }};
+    const labels = featuresData.map(d => d.Feature);
+    const data = featuresData.map(d => d.Importance);
+
+    const ctx = document.getElementById('featureImportanceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Importance Score',
+                data: data,
+                backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            scales: {
+                x: { beginAtZero: true }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">{{ action }} Customer</h2>
+    <a href="{{ url_for('customer.list_customers') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to List</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <form method="POST" action="{% if action == 'Add' %}{{ url_for('customer.add_customer') }}{% elif action == 'Edit' %}{{ url_for('customer.edit_customer', id=customer.id) }}{% endif %}">
+            
+            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">Basic Information</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Customer ID</label>
+                    <input type="text" name="customer_id" class="form-control" value="{{ customer.customer_id if customer else '' }}" required {% if action == 'View' %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Gender</label>
+                    <select name="gender" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="Male" {% if customer and customer.gender == 'Male' %}selected{% endif %}>Male</option>
+                        <option value="Female" {% if customer and customer.gender == 'Female' %}selected{% endif %}>Female</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Senior Citizen</label>
+                    <select name="senior_citizen" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="0" {% if customer and customer.senior_citizen == 0 %}selected{% endif %}>No</option>
+                        <option value="1" {% if customer and customer.senior_citizen == 1 %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Partner</label>
+                    <select name="partner" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="No" {% if customer and customer.partner == 'No' %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if customer and customer.partner == 'Yes' %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Dependents</label>
+                    <select name="dependents" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="No" {% if customer and customer.dependents == 'No' %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if customer and customer.dependents == 'Yes' %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tenure (Months)</label>
+                    <input type="number" name="tenure" class="form-control" value="{{ customer.tenure if customer else 0 }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">Services</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Phone Service</label>
+                    <select name="phone_service" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="No" {% if customer and customer.phone_service == 'No' %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if customer and customer.phone_service == 'Yes' %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Multiple Lines</label>
+                    <select name="multiple_lines" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="No" {% if customer and customer.multiple_lines == 'No' %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if customer and customer.multiple_lines == 'Yes' %}selected{% endif %}>Yes</option>
+                        <option value="No phone service" {% if customer and customer.multiple_lines == 'No phone service' %}selected{% endif %}>No phone service</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Internet Service</label>
+                    <select name="internet_service" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="DSL" {% if customer and customer.internet_service == 'DSL' %}selected{% endif %}>DSL</option>
+                        <option value="Fiber optic" {% if customer and customer.internet_service == 'Fiber optic' %}selected{% endif %}>Fiber optic</option>
+                        <option value="No" {% if customer and customer.internet_service == 'No' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Online Security</label>
+                    <input type="text" name="online_security" class="form-control" value="{{ customer.online_security if customer else 'No' }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Online Backup</label>
+                    <input type="text" name="online_backup" class="form-control" value="{{ customer.online_backup if customer else 'No' }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Device Protection</label>
+                    <input type="text" name="device_protection" class="form-control" value="{{ customer.device_protection if customer else 'No' }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tech Support</label>
+                    <input type="text" name="tech_support" class="form-control" value="{{ customer.tech_support if customer else 'No' }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Streaming TV</label>
+                    <input type="text" name="streaming_tv" class="form-control" value="{{ customer.streaming_tv if customer else 'No' }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Streaming Movies</label>
+                    <input type="text" name="streaming_movies" class="form-control" value="{{ customer.streaming_movies if customer else 'No' }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">Billing & Contract</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Contract</label>
+                    <select name="contract" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="Month-to-month" {% if customer and customer.contract == 'Month-to-month' %}selected{% endif %}>Month-to-month</option>
+                        <option value="One year" {% if customer and customer.contract == 'One year' %}selected{% endif %}>One year</option>
+                        <option value="Two year" {% if customer and customer.contract == 'Two year' %}selected{% endif %}>Two year</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Paperless Billing</label>
+                    <select name="paperless_billing" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="No" {% if customer and customer.paperless_billing == 'No' %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if customer and customer.paperless_billing == 'Yes' %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Payment Method</label>
+                    <select name="payment_method" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="Electronic check" {% if customer and customer.payment_method == 'Electronic check' %}selected{% endif %}>Electronic check</option>
+                        <option value="Mailed check" {% if customer and customer.payment_method == 'Mailed check' %}selected{% endif %}>Mailed check</option>
+                        <option value="Bank transfer (automatic)" {% if customer and customer.payment_method == 'Bank transfer (automatic)' %}selected{% endif %}>Bank transfer (automatic)</option>
+                        <option value="Credit card (automatic)" {% if customer and customer.payment_method == 'Credit card (automatic)' %}selected{% endif %}>Credit card (automatic)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Monthly Charges</label>
+                    <input type="number" step="0.01" name="monthly_charges" class="form-control" value="{{ customer.monthly_charges if customer else 0.0 }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Total Charges</label>
+                    <input type="number" step="0.01" name="total_charges" class="form-control" value="{{ customer.total_charges if customer else 0.0 }}" {% if action == 'View' %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Actual Churn Status (Target)</label>
+                    <select name="churn" class="form-select" {% if action == 'View' %}disabled{% endif %}>
+                        <option value="No" {% if customer and customer.churn == 'No' %}selected{% endif %}>No (Retained)</option>
+                        <option value="Yes" {% if customer and customer.churn == 'Yes' %}selected{% endif %}>Yes (Churned)</option>
+                    </select>
+                </div>
+            </div>
+
+            {% if action != 'View' %}
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary px-4 fw-bold">Save Customer</button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

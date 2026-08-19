@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Dataset Preview: {{ filename }}</h2>
+    <form method="POST" action="{{ url_for('dataset.import_data', filename=filename) }}">
+        <button type="submit" class="btn btn-success shadow-sm"><i class="bi bi-database-add"></i> Import to Database</button>
+    </form>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="fw-bold opacity-75">Total Rows</h6>
+                <h3 class="fw-bold mb-0">{{ info.rows }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="fw-bold opacity-75">Total Columns</h6>
+                <h3 class="fw-bold mb-0">{{ info.columns }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="fw-bold opacity-75">Null Values Found</h6>
+                <h3 class="fw-bold mb-0">{{ info.null_values }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="fw-bold opacity-75">Status</h6>
+                <h3 class="fw-bold mb-0">Ready for Import</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white pt-4 pb-2 border-bottom">
+        <h6 class="fw-bold text-primary"><i class="bi bi-table me-2"></i>Data Preview (Top 10 Rows)</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+            {{ table|safe }}
+        </div>
+    </div>
+</div>
+{% endblock %}

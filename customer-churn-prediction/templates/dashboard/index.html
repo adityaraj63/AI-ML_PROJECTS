@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Dashboard</h2>
+    <a href="{{ url_for('dataset.upload') }}" class="btn btn-primary shadow-sm"><i class="bi bi-cloud-arrow-up"></i> Upload Data</a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card border-0 shadow-sm h-100 bg-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-bold mb-1">Total Customers</h6>
+                        <h3 class="fw-bold mb-0 text-primary counter">{{ total_customers }}</h3>
+                    </div>
+                    <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-people-fill fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card border-0 shadow-sm h-100 bg-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-bold mb-1">Active Customers</h6>
+                        <h3 class="fw-bold mb-0 text-success counter">{{ active_customers }}</h3>
+                    </div>
+                    <div class="icon-box bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-person-check-fill fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card border-0 shadow-sm h-100 bg-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-bold mb-1">Predicted Churn</h6>
+                        <h3 class="fw-bold mb-0 text-danger counter">{{ predicted_churn }}</h3>
+                    </div>
+                    <div class="icon-box bg-danger bg-opacity-10 text-danger">
+                        <i class="bi bi-person-dash-fill fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card border-0 shadow-sm h-100 bg-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-bold mb-1">Total Predictions</h6>
+                        <h3 class="fw-bold mb-0 text-warning counter">{{ total_predictions }}</h3>
+                    </div>
+                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-graph-up-arrow fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <h6 class="fw-bold"><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Churn Trends</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="churnTrendChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <h6 class="fw-bold"><i class="bi bi-pie-chart-fill me-2 text-success"></i>Customer Status</h6>
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <canvas id="churnPieChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-4 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">Recent Predictions</h6>
+        <a href="{{ url_for('ml.history') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Customer ID</th>
+                        <th>Prediction</th>
+                        <th>Risk Level</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in recent_predictions %}
+                    <tr>
+                        <td class="fw-bold">{{ p.customer.customer_id }}</td>
+                        <td>
+                            {% if p.prediction_result == 'Yes' %}
+                                <span class="badge bg-danger">Churn</span>
+                            {% else %}
+                                <span class="badge bg-success">Retained</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.risk_level == 'High Risk' %}
+                                <span class="text-danger fw-bold"><i class="bi bi-arrow-up-circle-fill"></i> High</span>
+                            {% elif p.risk_level == 'Medium Risk' %}
+                                <span class="text-warning fw-bold"><i class="bi bi-dash-circle-fill"></i> Medium</span>
+                            {% else %}
+                                <span class="text-success fw-bold"><i class="bi bi-arrow-down-circle-fill"></i> Low</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ p.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">No recent predictions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Example Data for Charts
+    const active = {{ active_customers }};
+    const churn = {{ predicted_churn }};
+
+    const ctxPie = document.getElementById('churnPieChart').getContext('2d');
+    new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active', 'Predicted Churn'],
+            datasets: [{
+                data: [active, churn],
+                backgroundColor: ['#198754', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    const ctxBar = document.getElementById('churnTrendChart').getContext('2d');
+    new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Churned Customers',
+                data: [12, 19, 15, 25, 22, churn],
+                backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
+{% endblock %}
