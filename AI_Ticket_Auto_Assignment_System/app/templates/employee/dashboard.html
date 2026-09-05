@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item active"><i class="bi bi-house me-1"></i>Dashboard</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Welcome back, {{ current_user.first_name }}! 👋</h1>
+    <p class="page-subtitle">Here's an overview of your support tickets</p>
+  </div>
+  <a href="{{ url_for('employee.new_ticket') }}" class="btn btn-primary btn-glow">
+    <i class="bi bi-plus-circle me-2"></i>New Ticket
+  </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-purple">
+      <div class="stat-icon"><i class="bi bi-ticket-detailed"></i></div>
+      <div class="stat-body">
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total Tickets</div>
+      </div>
+      <div class="stat-bg-icon"><i class="bi bi-ticket-detailed"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-blue">
+      <div class="stat-icon"><i class="bi bi-circle"></i></div>
+      <div class="stat-body">
+        <div class="stat-value">{{ stats.open }}</div>
+        <div class="stat-label">Open</div>
+      </div>
+      <div class="stat-bg-icon"><i class="bi bi-circle"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-amber">
+      <div class="stat-icon"><i class="bi bi-arrow-repeat"></i></div>
+      <div class="stat-body">
+        <div class="stat-value">{{ stats.in_progress }}</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+      <div class="stat-bg-icon"><i class="bi bi-arrow-repeat"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-green">
+      <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-body">
+        <div class="stat-value">{{ stats.resolved }}</div>
+        <div class="stat-label">Resolved</div>
+      </div>
+      <div class="stat-bg-icon"><i class="bi bi-check-circle"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <a href="{{ url_for('employee.new_ticket') }}" class="quick-action-card">
+      <div class="qa-icon qa-purple"><i class="bi bi-plus-circle-fill"></i></div>
+      <div class="qa-content">
+        <strong>Create New Ticket</strong>
+        <span>AI will auto-assign to right dept</span>
+      </div>
+      <i class="bi bi-arrow-right qa-arrow"></i>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('employee.my_tickets') }}" class="quick-action-card">
+      <div class="qa-icon qa-blue"><i class="bi bi-collection-fill"></i></div>
+      <div class="qa-content">
+        <strong>View All Tickets</strong>
+        <span>Track your ticket history</span>
+      </div>
+      <i class="bi bi-arrow-right qa-arrow"></i>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('auth.profile') }}" class="quick-action-card">
+      <div class="qa-icon qa-green"><i class="bi bi-person-badge-fill"></i></div>
+      <div class="qa-content">
+        <strong>My Profile</strong>
+        <span>Update your account settings</span>
+      </div>
+      <i class="bi bi-arrow-right qa-arrow"></i>
+    </a>
+  </div>
+</div>
+
+<!-- Recent Tickets -->
+<div class="card-glass">
+  <div class="card-glass-header">
+    <h5><i class="bi bi-clock-history me-2"></i>Recent Tickets</h5>
+    <a href="{{ url_for('employee.my_tickets') }}" class="btn btn-sm btn-outline-primary">View All</a>
+  </div>
+  <div class="card-glass-body p-0">
+    {% if tickets %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Ticket #</th>
+            <th>Title</th>
+            <th>Department</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>AI Confidence</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ticket in tickets %}
+          <tr class="ticket-row" onclick="window.location='{{ url_for('employee.ticket_detail', ticket_id=ticket.id) }}'">
+            <td><code class="ticket-num">{{ ticket.ticket_number }}</code></td>
+            <td>
+              <span class="ticket-title">{{ ticket.title[:50] }}{% if ticket.title|length > 50 %}...{% endif %}</span>
+            </td>
+            <td>
+              {% if ticket.department %}
+                <span class="dept-badge" style="background: {{ ticket.department.color }}20; color: {{ ticket.department.color }}; border: 1px solid {{ ticket.department.color }}40;">
+                  <i class="{{ ticket.department.icon }} me-1"></i>{{ ticket.department.name }}
+                </span>
+              {% else %}
+                <span class="text-muted">Unassigned</span>
+              {% endif %}
+            </td>
+            <td><span class="badge-priority badge-priority-{{ ticket.priority }}">{{ ticket.priority.title() }}</span></td>
+            <td><span class="badge-status badge-status-{{ ticket.status }}">{{ ticket.status.replace('_', ' ').title() }}</span></td>
+            <td>
+              {% if ticket.ai_confidence %}
+                <div class="confidence-bar">
+                  <div class="confidence-fill" style="width: {{ ticket.ai_confidence }}%"></div>
+                  <span class="confidence-text">{{ ticket.ai_confidence|round(1) }}%</span>
+                </div>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ ticket.created_at.strftime('%b %d, %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-ticket"></i>
+      <h5>No tickets yet</h5>
+      <p>Submit your first support ticket and our AI will route it instantly.</p>
+      <a href="{{ url_for('employee.new_ticket') }}" class="btn btn-primary btn-glow">
+        <i class="bi bi-plus-circle me-2"></i>Create Ticket
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

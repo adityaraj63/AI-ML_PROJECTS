@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}My Profile — Employee{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('employee.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Profile</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-person-circle me-2"></i>My Profile</h1>
+</div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card-glass text-center p-4">
+      <div class="profile-avatar mx-auto mb-3">{{ user.avatar_initials }}</div>
+      <h4>{{ user.full_name }}</h4>
+      <p class="text-muted">{{ user.email }}</p>
+      <span class="badge-role badge-role-{{ user.role }}">{{ user.display_role }}</span>
+      <hr class="my-3"/>
+      <dl class="info-list text-start">
+        <dt>Employee ID</dt><dd>{{ user.employee_id or '—' }}</dd>
+        <dt>Department</dt><dd>{{ user.department.name if user.department else '—' }}</dd>
+        <dt>Member Since</dt><dd>{{ user.created_at.strftime('%B %Y') }}</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="row g-3 mb-4">
+      <div class="col-4"><div class="kpi-card"><div class="kpi-value">{{ stats.total }}</div><div class="kpi-label">Total Tickets</div></div></div>
+      <div class="col-4"><div class="kpi-card"><div class="kpi-value">{{ stats.open }}</div><div class="kpi-label">Open</div></div></div>
+      <div class="col-4"><div class="kpi-card"><div class="kpi-value">{{ stats.resolved }}</div><div class="kpi-label">Resolved</div></div></div>
+    </div>
+    <div class="card-glass">
+      <div class="card-glass-header"><h5>Quick Actions</h5></div>
+      <div class="card-glass-body">
+        <div class="row g-3">
+          <div class="col-6"><a href="{{ url_for('employee.new_ticket') }}" class="quick-action-card"><div class="qa-icon qa-purple"><i class="bi bi-plus-circle"></i></div><div class="qa-content"><strong>New Ticket</strong><span>Submit a ticket</span></div></a></div>
+          <div class="col-6"><a href="{{ url_for('employee.my_tickets') }}" class="quick-action-card"><div class="qa-icon qa-blue"><i class="bi bi-collection"></i></div><div class="qa-content"><strong>My Tickets</strong><span>View history</span></div></a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

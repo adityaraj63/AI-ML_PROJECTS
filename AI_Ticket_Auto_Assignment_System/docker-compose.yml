@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: ai_ticket_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-RootPassword@123}
+      MYSQL_DATABASE: ${DB_NAME:-ai_ticket_db}
+      MYSQL_USER: ${DB_USER:-ticket_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-RootPassword@123}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+      interval: 5s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai_ticket_app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-change-this-super-secret-key-32chars}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-ai_ticket_db}
+      DB_USER: ${DB_USER:-ticket_user}
+      DB_PASSWORD: ${DB_PASSWORD:-RootPassword@123}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@company.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123456}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./dataset:/app/dataset
+      - ./app/ml/saved_models:/app/app/ml/saved_models
+      - ./app/static/plots:/app/app/static/plots
+      - ./uploads:/app/uploads
+    command: >
+      sh -c "
+        flask db upgrade 2>/dev/null || flask init-db &&
+        gunicorn --workers=2 --threads=4 --worker-class=gthread
+        --bind=0.0.0.0:5000 --timeout=120 'run:app'
+      "
+
+volumes:
+  mysql_data:

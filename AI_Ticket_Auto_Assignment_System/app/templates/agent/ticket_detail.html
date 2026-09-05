@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.ticket_number }} — Agent{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('agent.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('agent.tickets') }}">Tickets</a></li>
+    <li class="breadcrumb-item active">{{ ticket.ticket_number }}</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><code class="me-2">{{ ticket.ticket_number }}</code>{{ ticket.title[:55] }}</h1>
+    <div class="d-flex gap-2 mt-2">
+      <span class="badge-status badge-status-{{ ticket.status }}">{{ ticket.status.replace('_',' ').title() }}</span>
+      <span class="badge-priority badge-priority-{{ ticket.priority }}">{{ ticket.priority.title() }}</span>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('agent.tickets') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+    {% if ticket.status not in ['resolved', 'closed', 'escalated'] %}
+    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#escalateModal">
+      <i class="bi bi-exclamation-triangle me-1"></i>Escalate
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card-glass mb-4">
+      <div class="card-glass-header"><h5><i class="bi bi-chat-text me-2"></i>Description</h5></div>
+      <div class="card-glass-body"><p class="ticket-description">{{ ticket.description }}</p></div>
+    </div>
+
+    <div class="card-glass mb-4">
+      <div class="card-glass-header"><h5><i class="bi bi-arrow-clockwise me-2"></i>Update Status</h5></div>
+      <div class="card-glass-body">
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-600">Status</label>
+              {{ form.status(class="form-select custom-input") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-600">Comment Type</label>
+              {{ form.is_internal(class="form-select custom-input") }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-600">Comment / Notes</label>
+              {{ form.comment(class="form-control custom-input", rows=3, placeholder="Add update or resolution notes...") }}
+              {% for e in form.comment.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-check-circle me-2"></i>Update</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card-glass">
+      <div class="card-glass-header"><h5><i class="bi bi-chat-dots me-2"></i>Comments</h5></div>
+      <div class="card-glass-body">
+        {% for comment in ticket.comments.order_by(db.text('created_at asc')).all() %}
+        <div class="comment-item {% if comment.is_internal %}comment-internal{% endif %}">
+          <div class="comment-avatar">{{ comment.user.avatar_initials }}</div>
+          <div class="comment-body">
+            <div class="comment-header">
+              <strong>{{ comment.user.full_name }}</strong>
+              {% if comment.is_internal %}<span class="badge bg-warning ms-1 small">Internal</span>{% endif %}
+              <span class="text-muted small ms-2">{{ comment.created_at.strftime('%b %d %I:%M %p') }}</span>
+            </div>
+            <p class="comment-text">{{ comment.content }}</p>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted">No comments yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    {% if ticket.ai_confidence %}
+    <div class="card-glass mb-4 ai-result-card">
+      <div class="card-glass-header"><h5><i class="bi bi-robot me-2"></i>AI Analysis</h5></div>
+      <div class="card-glass-body">
+        {% set color = ticket.department.color if ticket.department else '#6366f1' %}
+        <div class="ai-dept-display mb-3" style="border-left: 4px solid {{ color }};">
+          <small class="text-muted">Predicted Department</small>
+          <h5 style="color: {{ color }};">{{ ticket.ai_predicted_dept.name if ticket.ai_predicted_dept else 'Unknown' }}</h5>
+        </div>
+        {% set conf = ticket.ai_confidence %}
+        {% set conf_color = '#22c55e' if conf >= 80 else ('#f59e0b' if conf >= 60 else '#ef4444') %}
+        <div class="d-flex justify-content-between mb-1"><small>Confidence</small><small style="color:{{ conf_color }};font-weight:700;">{{ conf|round(1) }}%</small></div>
+        <div class="gauge-track mb-3"><div class="gauge-fill" style="width:{{ conf }}%;background:{{ conf_color }};"></div></div>
+        {% if keywords %}
+        <div class="keywords-wrap">{% for kw in keywords %}<span class="keyword-tag">{{ kw }}</span>{% endfor %}</div>
+        {% endif %}
+        {% if all_probs %}
+        <div class="mt-3">
+          {% for dept_name, prob in all_probs.items() %}
+          <div class="dept-prob-item mt-1">
+            <div class="d-flex justify-content-between mb-1"><span class="small">{{ dept_name }}</span><span class="small fw-700">{{ (prob*100)|round(1) }}%</span></div>
+            <div class="prob-track"><div class="prob-fill" style="width:{{ prob*100 }}%;"></div></div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card-glass">
+      <div class="card-glass-header"><h6>Ticket Info</h6></div>
+      <div class="card-glass-body">
+        <dl class="info-list">
+          <dt>Created By</dt><dd>{{ ticket.creator.full_name if ticket.creator else '—' }}</dd>
+          <dt>Assigned To</dt><dd>{{ ticket.assignee.full_name if ticket.assignee else 'Unassigned' }}</dd>
+          <dt>Department</dt><dd>{{ ticket.department.name if ticket.department else '—' }}</dd>
+          <dt>Created</dt><dd>{{ ticket.created_at.strftime('%b %d, %Y') }}</dd>
+          {% if ticket.due_at %}<dt>Due</dt><dd class="{% if ticket.is_overdue %}text-danger{% endif %}">{{ ticket.due_at.strftime('%b %d, %Y') }}{% if ticket.is_overdue %} <span class="badge bg-danger">Overdue</span>{% endif %}</dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Escalate Modal -->
+<div class="modal fade" id="escalateModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark">
+      <div class="modal-header"><h5 class="modal-title">Escalate Ticket</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="POST" action="{{ url_for('agent.escalate_ticket', ticket_id=ticket.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <label class="form-label">Reason for Escalation</label>
+          <textarea name="reason" class="form-control custom-input" rows="3" required placeholder="Why is this being escalated?"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning"><i class="bi bi-exclamation-triangle me-1"></i>Escalate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

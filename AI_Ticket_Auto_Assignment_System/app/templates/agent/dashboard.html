@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Agent Dashboard{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item active"><i class="bi bi-headset me-1"></i>Agent Dashboard</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Welcome, {{ current_user.first_name }}! 🎧</h1>
+    <p class="page-subtitle">Your support queue and department tickets</p>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2-4">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-purple"><i class="bi bi-inbox"></i></div>
+      <div class="kpi-value">{{ stats.total }}</div>
+      <div class="kpi-label">Assigned</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2-4">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-blue"><i class="bi bi-circle"></i></div>
+      <div class="kpi-value">{{ stats.open }}</div>
+      <div class="kpi-label">Open</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2-4">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-amber"><i class="bi bi-arrow-repeat"></i></div>
+      <div class="kpi-value">{{ stats.in_progress }}</div>
+      <div class="kpi-label">In Progress</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2-4">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-green"><i class="bi bi-check-circle"></i></div>
+      <div class="kpi-value">{{ stats.resolved }}</div>
+      <div class="kpi-label">Resolved</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2-4">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-red"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="kpi-value">{{ stats.escalated }}</div>
+      <div class="kpi-label">Escalated</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card-glass">
+      <div class="card-glass-header">
+        <h5><i class="bi bi-inbox me-2"></i>My Assigned Queue</h5>
+        <a href="{{ url_for('agent.tickets') }}?view=assigned" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-glass-body p-0">
+        {% if assigned_tickets %}
+        {% for t in assigned_tickets %}
+        <div class="ticket-list-item" onclick="window.location='{{ url_for('agent.ticket_detail', ticket_id=t.id) }}'">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <code class="small">{{ t.ticket_number }}</code>
+              <p class="mb-1 fw-600 small">{{ t.title[:60] }}</p>
+            </div>
+            <div class="d-flex flex-column gap-1 align-items-end">
+              <span class="badge-priority badge-priority-{{ t.priority }}">{{ t.priority.title() }}</span>
+              <span class="badge-status badge-status-{{ t.status }}">{{ t.status.replace('_',' ').title() }}</span>
+            </div>
+          </div>
+          <small class="text-muted">{{ t.created_at.strftime('%b %d, %Y') }}</small>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state"><i class="bi bi-inbox"></i><h5>No assigned tickets</h5></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card-glass">
+      <div class="card-glass-header">
+        <h5><i class="bi bi-building me-2"></i>Department Queue</h5>
+        <a href="{{ url_for('agent.tickets') }}?view=department" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-glass-body p-0">
+        {% if dept_tickets %}
+        {% for t in dept_tickets %}
+        <div class="ticket-list-item" onclick="window.location='{{ url_for('agent.ticket_detail', ticket_id=t.id) }}'">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <code class="small">{{ t.ticket_number }}</code>
+              <p class="mb-1 fw-600 small">{{ t.title[:60] }}</p>
+            </div>
+            <div class="d-flex flex-column gap-1 align-items-end">
+              <span class="badge-priority badge-priority-{{ t.priority }}">{{ t.priority.title() }}</span>
+              <span class="badge-status badge-status-{{ t.status }}">{{ t.status.replace('_',' ').title() }}</span>
+            </div>
+          </div>
+          <small class="text-muted">{{ t.created_at.strftime('%b %d, %Y') }}</small>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state p-4"><i class="bi bi-building"></i><p class="text-muted">No department tickets</p></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item active"><i class="bi bi-speedometer2 me-1"></i>Dashboard</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Admin Dashboard</h1>
+    <p class="page-subtitle">System overview and real-time analytics</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+    <a href="{{ url_for('admin.analytics') }}" class="btn btn-primary btn-glow">
+      <i class="bi bi-bar-chart-line me-1"></i>Full Analytics
+    </a>
+  </div>
+</div>
+
+<!-- KPI Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-purple"><i class="bi bi-ticket-detailed"></i></div>
+      <div class="kpi-value">{{ stats.total }}</div>
+      <div class="kpi-label">Total Tickets</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-blue"><i class="bi bi-circle-fill"></i></div>
+      <div class="kpi-value">{{ stats.open }}</div>
+      <div class="kpi-label">Open</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-amber"><i class="bi bi-arrow-repeat"></i></div>
+      <div class="kpi-value">{{ stats.in_progress }}</div>
+      <div class="kpi-label">In Progress</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-green"><i class="bi bi-check-circle"></i></div>
+      <div class="kpi-value">{{ stats.resolved }}</div>
+      <div class="kpi-label">Resolved</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-cyan"><i class="bi bi-calendar-day"></i></div>
+      <div class="kpi-value">{{ stats.today }}</div>
+      <div class="kpi-label">Today</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-red"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="kpi-value">{{ stats.overdue }}</div>
+      <div class="kpi-label">Overdue</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card-glass h-100">
+      <div class="card-glass-header">
+        <h6><i class="bi bi-bar-chart me-2"></i>Monthly Ticket Volume</h6>
+        <span class="text-muted small">Last 12 months</span>
+      </div>
+      <div class="card-glass-body">
+        <canvas id="monthlyChart" height="80"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-glass h-100">
+      <div class="card-glass-header">
+        <h6><i class="bi bi-pie-chart me-2"></i>Priority Distribution</h6>
+      </div>
+      <div class="card-glass-body d-flex align-items-center justify-content-center">
+        <canvas id="priorityChart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card-glass h-100">
+      <div class="card-glass-header">
+        <h6><i class="bi bi-building me-2"></i>Tickets by Department</h6>
+      </div>
+      <div class="card-glass-body">
+        <canvas id="deptChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-glass h-100">
+      <div class="card-glass-header">
+        <h6><i class="bi bi-circle-half me-2"></i>Status Distribution</h6>
+      </div>
+      <div class="card-glass-body d-flex align-items-center justify-content-center">
+        <canvas id="statusChart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Row -->
+<div class="row g-4">
+  <!-- AI Stats -->
+  <div class="col-lg-4">
+    <div class="card-glass">
+      <div class="card-glass-header">
+        <h6><i class="bi bi-robot me-2"></i>AI Performance</h6>
+      </div>
+      <div class="card-glass-body">
+        <div class="ai-stat-row">
+          <span>Prediction Accuracy</span>
+          <span class="ai-stat-val">
+            {% if stats.prediction_accuracy %}{{ stats.prediction_accuracy }}%{% else %}<span class="text-muted">N/A</span>{% endif %}
+          </span>
+        </div>
+        <div class="ai-stat-row">
+          <span>Avg Resolution Time</span>
+          <span class="ai-stat-val">
+            {% if stats.avg_resolution_hours %}{{ stats.avg_resolution_hours }}h{% else %}<span class="text-muted">N/A</span>{% endif %}
+          </span>
+        </div>
+        <div class="ai-stat-row">
+          <span>Model Status</span>
+          <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:8px"></i>Active</span>
+        </div>
+        <hr/>
+        <form method="POST" action="{{ url_for('admin.trigger_training') }}" onsubmit="return confirm('Retrain the AI model? This may take a few minutes.')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-outline-primary w-100 btn-sm">
+            <i class="bi bi-gear me-2"></i>Retrain AI Model
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Department Workload -->
+  <div class="col-lg-4">
+    <div class="card-glass">
+      <div class="card-glass-header">
+        <h6><i class="bi bi-building me-2"></i>Department Workload</h6>
+      </div>
+      <div class="card-glass-body p-0">
+        {% for dept in dept_workload[:6] %}
+        <div class="workload-row">
+          <div class="workload-dept">
+            <i class="{{ dept.icon }}" style="color:{{ dept.color }}"></i>
+            <span>{{ dept.name }}</span>
+          </div>
+          <div class="workload-bar-wrap">
+            {% set pct = (dept.open / dept.total * 100) if dept.total > 0 else 0 %}
+            <div class="workload-bar" style="background:{{ dept.color }}20">
+              <div class="workload-fill" style="width:{{ pct }}%;background:{{ dept.color }}"></div>
+            </div>
+          </div>
+          <span class="workload-count">{{ dept.open }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="col-lg-4">
+    <div class="card-glass">
+      <div class="card-glass-header">
+        <h6><i class="bi bi-activity me-2"></i>Recent Activity</h6>
+        <a href="{{ url_for('admin.activity_logs') }}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-glass-body p-0">
+        {% for log in recent_activity %}
+        <div class="activity-item">
+          <div class="activity-dot"></div>
+          <div class="activity-content">
+            <span class="activity-action">{{ log.action.replace('_', ' ').title() }}</span>
+            <span class="activity-desc">{{ log.description[:50] if log.description else '' }}</span>
+            <span class="activity-time text-muted small">{{ log.created_at[:16] }}</span>
+          </div>
+        </div>
+        {% endfor %}
+        {% if not recent_activity %}
+        <div class="p-3 text-muted text-center">No recent activity</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CHARTS_DATA = {{ charts_data|safe }};
+const CHART_COLORS = ['#6366f1','#22c55e','#3b82f6','#f59e0b','#06b6d4','#ef4444','#ec4899','#84cc16','#f97316','#8b5cf6'];
+const CHART_DEFAULTS = {
+  font: { family: 'Inter', size: 12 },
+  color: '#94a3b8',
+};
+Chart.defaults.font.family = 'Inter';
+Chart.defaults.color = '#94a3b8';
+
+// Monthly
+const monthly = CHARTS_DATA.tickets_per_month || {};
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(monthly),
+    datasets: [{
+      label: 'Tickets',
+      data: Object.values(monthly),
+      backgroundColor: '#6366f180',
+      borderColor: '#6366f1',
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#1e293b' } },
+      y: { grid: { color: '#1e293b' }, beginAtZero: true }
+    }
+  }
+});
+
+// Priority Doughnut
+const prio = CHARTS_DATA.priority_distribution || {};
+new Chart(document.getElementById('priorityChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(prio).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+    datasets: [{ data: Object.values(prio), backgroundColor: ['#22c55e','#f59e0b','#ef4444','#7c3aed'], borderWidth: 0 }]
+  },
+  options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+});
+
+// Dept Bar
+const depts = CHARTS_DATA.tickets_per_department || {};
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(depts),
+    datasets: [{
+      label: 'Tickets',
+      data: Object.values(depts),
+      backgroundColor: CHART_COLORS,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#1e293b' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// Status Doughnut
+const status = CHARTS_DATA.status_distribution || {};
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(status).map(k => k.replace('_',' ').replace(/\b\w/g, c=>c.toUpperCase())),
+    datasets: [{ data: Object.values(status), backgroundColor: ['#3b82f6','#f59e0b','#22c55e','#6b7280','#ef4444'], borderWidth: 0 }]
+  },
+  options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+});
+
+function refreshDashboard() {
+  window.location.reload();
+}
+</script>
+{% endblock %}

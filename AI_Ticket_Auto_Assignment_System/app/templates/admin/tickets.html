@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}All Tickets — Admin{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Tickets</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-ticket-detailed me-2"></i>All Tickets</h1>
+  <div class="d-flex gap-2">
+    <span class="badge bg-primary fs-6 px-3 py-2">{{ pagination.total }} Total</span>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card-glass mb-4">
+  <div class="card-glass-body">
+    <form method="GET" class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label small">Search</label>
+        <div class="input-icon-wrapper">
+          <i class="bi bi-search input-icon"></i>
+          <input type="text" name="q" class="form-control custom-input" placeholder="Ticket #, title..." value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Status</label>
+        <select name="status" class="form-select custom-input">
+          <option value="">All</option>
+          {% for s in ['open','in_progress','resolved','closed','escalated'] %}
+            <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Priority</label>
+        <select name="priority" class="form-select custom-input">
+          <option value="">All</option>
+          {% for p in ['low','medium','high','critical'] %}
+            <option value="{{ p }}" {% if priority == p %}selected{% endif %}>{{ p.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Department</label>
+        <select name="dept_id" class="form-select custom-input">
+          <option value="">All Departments</option>
+          {% for dept in departments %}
+            <option value="{{ dept.id }}" {% if dept_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2 align-items-end">
+        <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-funnel me-1"></i>Filter</button>
+        <a href="{{ url_for('admin.tickets') }}" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card-glass">
+  <div class="card-glass-body p-0">
+    {% if pagination.items %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Ticket #</th>
+            <th>Title</th>
+            <th>Creator</th>
+            <th>Department</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>AI Conf.</th>
+            <th>Assigned To</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in pagination.items %}
+          <tr>
+            <td><code class="ticket-num">{{ t.ticket_number }}</code></td>
+            <td>
+              <a href="{{ url_for('admin.ticket_detail', ticket_id=t.id) }}" class="ticket-title-link">
+                {{ t.title[:45] }}{% if t.title|length > 45 %}...{% endif %}
+              </a>
+            </td>
+            <td class="small">{{ t.creator.full_name if t.creator else '—' }}</td>
+            <td>
+              {% if t.department %}
+                <span class="dept-badge" style="background:{{ t.department.color }}20;color:{{ t.department.color }};border:1px solid {{ t.department.color }}40;">
+                  <i class="{{ t.department.icon }} me-1"></i>{{ t.department.name }}
+                </span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td><span class="badge-priority badge-priority-{{ t.priority }}">{{ t.priority.title() }}</span></td>
+            <td><span class="badge-status badge-status-{{ t.status }}">{{ t.status.replace('_',' ').title() }}</span></td>
+            <td>
+              {% if t.ai_confidence %}
+                <div class="confidence-bar">
+                  <div class="confidence-fill" style="width:{{ t.ai_confidence }}%"></div>
+                  <span class="confidence-text">{{ t.ai_confidence|round(1) }}%</span>
+                </div>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="small">{{ t.assignee.full_name if t.assignee else '—' }}</td>
+            <td class="text-muted small">{{ t.created_at.strftime('%b %d') }}</td>
+            <td>
+              <a href="{{ url_for('admin.ticket_detail', ticket_id=t.id) }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center p-3">
+      <span class="text-muted small">{{ pagination.total }} tickets total, page {{ pagination.page }} of {{ pagination.pages }}</span>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if pagination.has_prev %}
+          <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&status={{ status }}&priority={{ priority }}&dept_id={{ dept_id or '' }}&q={{ query }}"><i class="bi bi-chevron-left"></i></a></li>
+          {% endif %}
+          {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+            {% if p %}
+            <li class="page-item {% if p == pagination.page %}active{% endif %}"><a class="page-link" href="?page={{ p }}&status={{ status }}&priority={{ priority }}&dept_id={{ dept_id or '' }}&q={{ query }}">{{ p }}</a></li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+          {% endfor %}
+          {% if pagination.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}&status={{ status }}&priority={{ priority }}&dept_id={{ dept_id or '' }}&q={{ query }}"><i class="bi bi-chevron-right"></i></a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox"></i>
+      <h5>No tickets found</h5>
+      <p>Try adjusting your filters.</p>
+      <a href="{{ url_for('admin.tickets') }}" class="btn btn-primary">Clear Filters</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}New Ticket{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('employee.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">New Ticket</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><i class="bi bi-plus-circle me-2"></i>Submit New Ticket</h1>
+    <p class="page-subtitle">Describe your issue and our AI will route it to the right team instantly</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Ticket Form -->
+  <div class="col-lg-7">
+    <div class="card-glass">
+      <div class="card-glass-header">
+        <h5><i class="bi bi-pencil-square me-2"></i>Ticket Details</h5>
+        <span class="badge bg-primary"><i class="bi bi-robot me-1"></i>AI Powered</span>
+      </div>
+      <div class="card-glass-body">
+        <form method="POST" id="ticketForm" novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="mb-4">
+            <label class="form-label fw-600">Ticket Title <span class="text-danger">*</span></label>
+            {{ form.title(
+              class="form-control custom-input" + (" is-invalid" if form.title.errors else ""),
+              placeholder="e.g., My laptop is not turning on",
+              id="ticketTitle",
+              oninput="debouncedPreview()"
+            ) }}
+            {% for e in form.title.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            <small class="text-muted">Be specific — AI uses this to classify your ticket</small>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-600">Description <span class="text-danger">*</span></label>
+            {{ form.description(
+              class="form-control custom-input" + (" is-invalid" if form.description.errors else ""),
+              rows=6,
+              placeholder="Describe the issue in detail. Include:\n• What happened?\n• When did it start?\n• What have you tried?",
+              id="ticketDesc",
+              oninput="debouncedPreview()"
+            ) }}
+            {% for e in form.description.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">Min 20 characters</small>
+              <small class="text-muted char-count" id="charCount">0 characters</small>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-600">Priority</label>
+            <div class="priority-selector" id="prioritySelector">
+              {% for val, label in [('low', 'Low'), ('medium', 'Medium'), ('high', 'High'), ('critical', 'Critical')] %}
+              <label class="priority-option priority-{{ val }}">
+                <input type="radio" name="priority" value="{{ val }}" {% if val == 'medium' %}checked{% endif %}>
+                <span class="priority-icon">
+                  {% if val == 'low' %}<i class="bi bi-arrow-down"></i>
+                  {% elif val == 'medium' %}<i class="bi bi-dash"></i>
+                  {% elif val == 'high' %}<i class="bi bi-arrow-up"></i>
+                  {% else %}<i class="bi bi-exclamation-triangle"></i>{% endif %}
+                </span>
+                <span>{{ label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-glow w-100" id="submitBtn">
+            <span class="btn-text"><i class="bi bi-send me-2"></i>Submit Ticket</span>
+            <span class="btn-loading d-none"><span class="spinner-border spinner-border-sm me-2"></span>Submitting...</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Preview Panel -->
+  <div class="col-lg-5">
+    <div class="card-glass ai-preview-card" id="aiPreviewCard">
+      <div class="card-glass-header">
+        <h5><i class="bi bi-robot me-2"></i>AI Prediction Preview</h5>
+        <span class="badge bg-success ai-live-badge"><i class="bi bi-circle-fill me-1 pulse-dot"></i>Live</span>
+      </div>
+      <div class="card-glass-body" id="aiPreviewBody">
+        <div class="ai-placeholder">
+          <div class="ai-placeholder-icon">
+            <i class="bi bi-robot"></i>
+          </div>
+          <p>Start typing your ticket details and watch the AI analyze it in real-time</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card-glass mt-3">
+      <div class="card-glass-header">
+        <h6><i class="bi bi-lightbulb me-2 text-warning"></i>Tips for Better Routing</h6>
+      </div>
+      <div class="card-glass-body">
+        <ul class="tips-list">
+          <li><i class="bi bi-check2"></i> Include specific error messages or codes</li>
+          <li><i class="bi bi-check2"></i> Mention affected software or hardware</li>
+          <li><i class="bi bi-check2"></i> State when the issue started</li>
+          <li><i class="bi bi-check2"></i> List what you've already tried</li>
+          <li><i class="bi bi-check2"></i> Include number of affected users</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEPT_COLORS = {
+  "Hardware":"#0284c7","Software":"#22c55e","Network":"#3b82f6",
+  "Database":"#f59e0b","Cloud":"#06b6d4","Security":"#ef4444",
+  "HR":"#ec4899","Finance":"#84cc16","CRM Support":"#f97316","DevOps":"#8b5cf6"
+};
+
+let previewTimeout;
+function debouncedPreview() {
+  clearTimeout(previewTimeout);
+  updateCharCount();
+  previewTimeout = setTimeout(fetchPreview, 600);
+}
+
+function updateCharCount() {
+  const desc = document.getElementById('ticketDesc');
+  document.getElementById('charCount').textContent = desc.value.length + ' characters';
+}
+
+async function fetchPreview() {
+  const title = document.getElementById('ticketTitle').value.trim();
+  const desc = document.getElementById('ticketDesc').value.trim();
+  if (title.length < 5 || desc.length < 10) {
+    resetPreview();
+    return;
+  }
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const resp = await fetch('/api/v1/predict', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({title, description: desc})
+    });
+    const data = await resp.json();
+    if (data.success && data.data) {
+      renderPreview(data.data);
+    }
+  } catch (e) {
+    console.log('Preview error', e);
+  }
+}
+
+function renderPreview(d) {
+  const color = DEPT_COLORS[d.predicted_department] || '#6366f1';
+  const conf = d.confidence;
+  const confColor = conf >= 80 ? '#22c55e' : conf >= 60 ? '#f59e0b' : '#ef4444';
+
+  const sortedProbs = Object.entries(d.all_probabilities || {})
+    .sort((a,b) => b[1] - a[1]).slice(0,5);
+
+  document.getElementById('aiPreviewBody').innerHTML = `
+    <div class="ai-result">
+      <div class="ai-dept-badge" style="background: ${color}20; border: 2px solid ${color}; color: ${color};">
+        <i class="bi bi-building me-2"></i>
+        <span class="fw-700">${d.predicted_department}</span>
+      </div>
+
+      <div class="ai-confidence-gauge mt-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="small fw-600">AI Confidence</span>
+          <span class="small fw-700" style="color: ${confColor}">${conf.toFixed(1)}%</span>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-fill" style="width: ${conf}%; background: ${confColor};"></div>
+        </div>
+      </div>
+
+      <div class="ai-meta mt-3">
+        <div class="ai-meta-item">
+          <i class="bi bi-flag me-2 text-warning"></i>
+          <span>Priority: <strong>${d.priority.toUpperCase()}</strong></span>
+        </div>
+        <div class="ai-meta-item">
+          <i class="bi bi-clock me-2 text-info"></i>
+          <span>Est. Resolution: <strong>${d.estimated_resolution_hours}h</strong></span>
+        </div>
+      </div>
+
+      ${d.keywords && d.keywords.length ? `
+      <div class="ai-keywords mt-3">
+        <small class="text-muted fw-600">Detected Keywords</small>
+        <div class="keywords-wrap mt-1">
+          ${d.keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <div class="ai-dept-probs mt-3">
+        <small class="text-muted fw-600">Top Matches</small>
+        ${sortedProbs.map(([dept, prob]) => `
+          <div class="dept-prob-item mt-1">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="small">${dept}</span>
+              <span class="small fw-600">${(prob*100).toFixed(1)}%</span>
+            </div>
+            <div class="prob-track">
+              <div class="prob-fill" style="width:${prob*100}%; background: ${DEPT_COLORS[dept] || '#6366f1'}"></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function resetPreview() {
+  document.getElementById('aiPreviewBody').innerHTML = `
+    <div class="ai-placeholder">
+      <div class="ai-placeholder-icon"><i class="bi bi-robot"></i></div>
+      <p>Start typing your ticket details and watch the AI analyze it in real-time</p>
+    </div>`;
+}
+
+document.getElementById('ticketForm').addEventListener('submit', function() {
+  document.querySelector('.btn-text').classList.add('d-none');
+  document.querySelector('.btn-loading').classList.remove('d-none');
+  document.getElementById('submitBtn').disabled = true;
+});
+</script>
+{% endblock %}

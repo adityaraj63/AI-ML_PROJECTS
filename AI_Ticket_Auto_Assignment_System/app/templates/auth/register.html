@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Create Account{% endblock %}
+{% block content %}
+<div class="auth-container">
+  <div class="auth-panel-left">
+    <div class="auth-hero">
+      <div class="hero-logo">
+        <div class="hero-logo-icon"><i class="bi bi-robot"></i></div>
+        <h1 class="hero-title">HelpDesk<span>AI</span></h1>
+      </div>
+      <p class="hero-tagline">Join the AI-Powered<br/>IT Support Platform</p>
+      <div class="hero-features">
+        <div class="hero-feature">
+          <div class="hf-icon"><i class="bi bi-ticket-detailed"></i></div>
+          <div class="hf-text"><strong>Submit Tickets</strong><span>Instantly classified by AI</span></div>
+        </div>
+        <div class="hero-feature">
+          <div class="hf-icon"><i class="bi bi-clock-history"></i></div>
+          <div class="hf-text"><strong>Track Progress</strong><span>Real-time status updates</span></div>
+        </div>
+        <div class="hero-feature">
+          <div class="hf-icon"><i class="bi bi-chat-dots"></i></div>
+          <div class="hf-text"><strong>Communicate</strong><span>Comment and collaborate</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-panel-right">
+    <div class="auth-card">
+      <div class="auth-card-header">
+        <h2>Create Account</h2>
+        <p>Fill in your details to get started</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.register') }}" class="auth-form" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label>First Name</label>
+            <div class="input-icon-wrapper">
+              <i class="bi bi-person input-icon"></i>
+              {{ form.first_name(class="form-control custom-input" + (" is-invalid" if form.first_name.errors else ""), placeholder="John") }}
+            </div>
+            {% for e in form.first_name.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="col-6">
+            <label>Last Name</label>
+            <div class="input-icon-wrapper">
+              <i class="bi bi-person input-icon"></i>
+              {{ form.last_name(class="form-control custom-input" + (" is-invalid" if form.last_name.errors else ""), placeholder="Doe") }}
+            </div>
+            {% for e in form.last_name.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="form-group-custom">
+          <label>Email Address</label>
+          <div class="input-icon-wrapper">
+            <i class="bi bi-envelope input-icon"></i>
+            {{ form.email(class="form-control custom-input" + (" is-invalid" if form.email.errors else ""), placeholder="you@company.com") }}
+          </div>
+          {% for e in form.email.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group-custom">
+          <label>Department</label>
+          <div class="input-icon-wrapper">
+            <i class="bi bi-building input-icon"></i>
+            {{ form.department_id(class="form-control custom-input" + (" is-invalid" if form.department_id.errors else "")) }}
+          </div>
+          {% for e in form.department_id.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group-custom">
+          <label>Password</label>
+          <div class="input-icon-wrapper">
+            <i class="bi bi-lock input-icon"></i>
+            {{ form.password(class="form-control custom-input" + (" is-invalid" if form.password.errors else ""), placeholder="Min 8 characters", id="reg-password") }}
+            <button type="button" class="password-toggle" onclick="togglePassword('reg-password')">
+              <i class="bi bi-eye" id="reg-password-eye"></i>
+            </button>
+          </div>
+          {% for e in form.password.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group-custom mb-3">
+          <label>Confirm Password</label>
+          <div class="input-icon-wrapper">
+            <i class="bi bi-lock-fill input-icon"></i>
+            {{ form.confirm_password(class="form-control custom-input" + (" is-invalid" if form.confirm_password.errors else ""), placeholder="Repeat password") }}
+          </div>
+          {% for e in form.confirm_password.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+
+        <button type="submit" class="btn-auth-submit">
+          <i class="bi bi-person-plus me-2"></i>Create Account
+        </button>
+      </form>
+
+      <p class="auth-footer-text mt-3">
+        Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+<script>
+function togglePassword(id) {
+  const inp = document.getElementById(id);
+  const icon = document.getElementById(id + '-eye');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  icon.className = inp.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Departments{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Departments</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-building me-2"></i>Departments</h1>
+  <a href="{{ url_for('admin.new_department') }}" class="btn btn-primary btn-glow"><i class="bi bi-plus me-2"></i>New Department</a>
+</div>
+<div class="row g-4">
+  {% for dept in departments %}
+  <div class="col-md-4 col-lg-3">
+    <div class="dept-card" style="border-top: 3px solid {{ dept.color }}">
+      <div class="dept-card-header">
+        <div class="dept-card-icon" style="background: {{ dept.color }}20; color: {{ dept.color }};">
+          <i class="{{ dept.icon }}"></i>
+        </div>
+        <div>
+          <h6 class="mb-0">{{ dept.name }}</h6>
+          <code class="small text-muted">{{ dept.code }}</code>
+        </div>
+        <div class="ms-auto">
+          <span class="badge {% if dept.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+            {% if dept.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </div>
+      </div>
+      {% if dept.description %}
+      <p class="dept-desc">{{ dept.description[:80] }}...</p>
+      {% endif %}
+      <div class="dept-stats">
+        <div class="dept-stat">
+          <span class="dept-stat-val" style="color: {{ dept.color }}">{{ dept.open_ticket_count }}</span>
+          <span class="dept-stat-label">Open</span>
+        </div>
+        <div class="dept-stat">
+          <span class="dept-stat-val">{{ dept.total_ticket_count }}</span>
+          <span class="dept-stat-label">Total</span>
+        </div>
+        <div class="dept-stat">
+          <span class="dept-stat-val">{{ dept.sla_hours }}h</span>
+          <span class="dept-stat-label">SLA</span>
+        </div>
+      </div>
+      <div class="dept-actions">
+        <a href="{{ url_for('admin.edit_department', dept_id=dept.id) }}" class="btn btn-sm btn-outline-primary w-100">
+          <i class="bi bi-pencil me-1"></i>Edit
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="empty-state"><i class="bi bi-building"></i><h5>No departments</h5></div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Analytics</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><i class="bi bi-bar-chart-line me-2"></i>Analytics &amp; Reports</h1>
+    <p class="page-subtitle">AI prediction metrics, workload analysis, and performance KPIs</p>
+  </div>
+  <form method="POST" action="{{ url_for('admin.trigger_training') }}" onsubmit="return confirm('Retrain AI model? This takes several minutes.')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary btn-glow">
+      <i class="bi bi-gear me-2"></i>Retrain AI Model
+    </button>
+  </form>
+</div>
+
+<!-- Top Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="kpi-card"><div class="kpi-icon kpi-purple"><i class="bi bi-robot"></i></div><div class="kpi-value">{{ total_predictions }}</div><div class="kpi-label">Total Predictions</div></div></div>
+  <div class="col-md-3"><div class="kpi-card"><div class="kpi-icon kpi-green"><i class="bi bi-check-circle"></i></div><div class="kpi-value">{{ correct_predictions }}</div><div class="kpi-label">Verified Correct</div></div></div>
+  <div class="col-md-3"><div class="kpi-card"><div class="kpi-icon kpi-blue"><i class="bi bi-percent"></i></div><div class="kpi-value">{{ accuracy or 'N/A' }}{% if accuracy %}%{% endif %}</div><div class="kpi-label">Feedback Accuracy</div></div></div>
+  <div class="col-md-3"><div class="kpi-card"><div class="kpi-icon kpi-amber"><i class="bi bi-chat-square-dots"></i></div><div class="kpi-value">{{ feedback_count }}</div><div class="kpi-label">Feedback Received</div></div></div>
+</div>
+
+<!-- ML Model Metrics -->
+{% if ml_metrics %}
+<div class="card-glass mb-4">
+  <div class="card-glass-header">
+    <h5><i class="bi bi-robot me-2"></i>ML Model Comparison</h5>
+    <span class="badge bg-success">Last Training</span>
+  </div>
+  <div class="card-glass-body">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Accuracy</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1 Score</th>
+            <th>Training Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for model_name, metrics in ml_metrics.items() %}
+          <tr>
+            <td class="fw-600">{{ model_name }}</td>
+            <td>
+              <div class="metric-cell">
+                <div class="metric-bar" style="width:{{ (metrics.accuracy * 100)|round(0) }}%;background:#6366f1;"></div>
+                <span>{{ (metrics.accuracy * 100)|round(1) }}%</span>
+              </div>
+            </td>
+            <td>
+              <div class="metric-cell">
+                <div class="metric-bar" style="width:{{ (metrics.precision * 100)|round(0) }}%;background:#22c55e;"></div>
+                <span>{{ (metrics.precision * 100)|round(1) }}%</span>
+              </div>
+            </td>
+            <td>
+              <div class="metric-cell">
+                <div class="metric-bar" style="width:{{ (metrics.recall * 100)|round(0) }}%;background:#3b82f6;"></div>
+                <span>{{ (metrics.recall * 100)|round(1) }}%</span>
+              </div>
+            </td>
+            <td>
+              <div class="metric-cell">
+                <div class="metric-bar" style="width:{{ (metrics.f1 * 100)|round(0) }}%;background:#f59e0b;"></div>
+                <span>{{ (metrics.f1 * 100)|round(1) }}%</span>
+              </div>
+            </td>
+            <td class="text-muted small">{{ metrics.training_time }}s</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card-glass h-100">
+      <div class="card-glass-header"><h6><i class="bi bi-bar-chart me-2"></i>Monthly Ticket Volume</h6></div>
+      <div class="card-glass-body"><canvas id="monthlyChart" height="100"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-glass h-100">
+      <div class="card-glass-header"><h6><i class="bi bi-pie-chart me-2"></i>Priority Distribution</h6></div>
+      <div class="card-glass-body d-flex align-items-center justify-content-center"><canvas id="priorityChart" style="max-height:230px"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card-glass">
+      <div class="card-glass-header"><h6><i class="bi bi-building me-2"></i>Department Workload</h6></div>
+      <div class="card-glass-body p-0">
+        {% for dept in dept_workload %}
+        <div class="workload-row">
+          <div class="workload-dept">
+            <i class="{{ dept.icon }}" style="color:{{ dept.color }}"></i>
+            <span>{{ dept.name }}</span>
+          </div>
+          <div class="workload-bar-wrap">
+            {% set pct = (dept.open / dept.total * 100) if dept.total > 0 else 0 %}
+            <div class="workload-bar" style="background:{{ dept.color }}20">
+              <div class="workload-fill" style="width:{{ pct }}%;background:{{ dept.color }}"></div>
+            </div>
+          </div>
+          <span class="workload-count">{{ dept.open }}/{{ dept.total }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-glass">
+      <div class="card-glass-header"><h6><i class="bi bi-person-badge me-2"></i>Agent Performance</h6></div>
+      <div class="card-glass-body p-0">
+        {% if agent_perf %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 small">
+            <thead><tr><th>Agent</th><th>Assigned</th><th>Resolved</th><th>Rate</th></tr></thead>
+            <tbody>
+              {% for ap in agent_perf %}
+              <tr>
+                <td>{{ ap.agent }}</td>
+                <td>{{ ap.assigned }}</td>
+                <td>{{ ap.resolved }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="prob-track flex-grow-1">
+                      <div class="prob-fill" style="width:{{ ap.resolution_rate }}%;background:#22c55e"></div>
+                    </div>
+                    <span class="fw-600">{{ ap.resolution_rate }}%</span>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="p-3 text-muted text-center">No agent data available</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confusion Matrix Image -->
+{% set cm_path = '/static/plots/cm_logistic_regression.png' %}
+<div class="card-glass mt-4">
+  <div class="card-glass-header"><h5><i class="bi bi-grid-3x3 me-2"></i>Model Confusion Matrix</h5></div>
+  <div class="card-glass-body text-center">
+    <img src="{{ cm_path }}" alt="Confusion Matrix" class="img-fluid rounded" style="max-height:400px;" onerror="this.parentNode.innerHTML='<p class=text-muted>Run model training to generate confusion matrix</p>'">
+  </div>
+</div>
+
+<script>
+const DATA = {{ charts_data|safe }};
+Chart.defaults.font.family = 'Inter';
+Chart.defaults.color = '#94a3b8';
+
+const monthly = DATA.tickets_per_month || {};
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'line',
+  data: {
+    labels: Object.keys(monthly),
+    datasets: [{
+      label: 'Tickets',
+      data: Object.values(monthly),
+      backgroundColor: '#6366f120',
+      borderColor: '#6366f1',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#6366f1',
+      pointRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { color: '#1e293b' } }, y: { grid: { color: '#1e293b' }, beginAtZero: true } }
+  }
+});
+
+const prio = DATA.priority_distribution || {};
+new Chart(document.getElementById('priorityChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(prio).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+    datasets: [{ data: Object.values(prio), backgroundColor: ['#22c55e','#f59e0b','#ef4444','#7c3aed'], borderWidth: 0 }]
+  },
+  options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+{% endblock %}

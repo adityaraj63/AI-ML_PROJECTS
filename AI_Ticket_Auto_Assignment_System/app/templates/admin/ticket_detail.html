@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.ticket_number }} — Admin{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('admin.tickets') }}">Tickets</a></li>
+    <li class="breadcrumb-item active">{{ ticket.ticket_number }}</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><code class="me-2">{{ ticket.ticket_number }}</code>{{ ticket.title[:55] }}{% if ticket.title|length > 55 %}...{% endif %}</h1>
+    <div class="d-flex gap-2 mt-2">
+      <span class="badge-status badge-status-{{ ticket.status }}">{{ ticket.status.replace('_',' ').title() }}</span>
+      <span class="badge-priority badge-priority-{{ ticket.priority }}">{{ ticket.priority.title() }}</span>
+    </div>
+  </div>
+  <a href="{{ url_for('admin.tickets') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row g-4">
+  <!-- Left: Ticket Info + Update Form -->
+  <div class="col-lg-7">
+    <div class="card-glass mb-4">
+      <div class="card-glass-header"><h5><i class="bi bi-chat-text me-2"></i>Description</h5></div>
+      <div class="card-glass-body">
+        <p class="ticket-description">{{ ticket.description }}</p>
+      </div>
+    </div>
+
+    <!-- Update Form -->
+    <div class="card-glass mb-4">
+      <div class="card-glass-header"><h5><i class="bi bi-pencil-square me-2"></i>Update Ticket</h5></div>
+      <div class="card-glass-body">
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-600">Status</label>
+              {{ form.status(class="form-select custom-input") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-600">Assign To</label>
+              {{ form.assigned_to_id(class="form-select custom-input") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-600">Department Override</label>
+              {{ form.department_id(class="form-select custom-input") }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-600">Priority</label>
+              {{ form.priority(class="form-select custom-input") }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-600">Resolution Notes</label>
+              {{ form.resolution_notes(class="form-control custom-input", rows=2, placeholder="Add resolution notes...") }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-600">Internal Comment</label>
+              {{ form.comment(class="form-control custom-input", rows=2, placeholder="Internal note (not visible to employee)...") }}
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-glow">
+            <i class="bi bi-check-circle me-2"></i>Update Ticket
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Correct AI Prediction -->
+    {% if ticket.ai_confidence %}
+    <div class="card-glass mb-4">
+      <div class="card-glass-header">
+        <h5><i class="bi bi-robot me-2"></i>Correct AI Prediction</h5>
+        <span class="text-muted small">Was the AI correct?</span>
+      </div>
+      <div class="card-glass-body">
+        <form method="POST" action="{{ url_for('admin.correct_prediction', ticket_id=ticket.id) }}" class="d-flex gap-2 flex-wrap align-items-end">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="flex-grow-1">
+            <label class="form-label small">Select Correct Department</label>
+            <select name="correct_department" class="form-select custom-input">
+              {% for dept in departments %}
+                <option value="{{ dept.name }}" {% if ticket.department and ticket.department.name == dept.name %}selected{% endif %}>
+                  {{ dept.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-pencil me-1"></i>Mark as Correct Dept
+          </button>
+        </form>
+        {% if ticket.ai_confidence %}<p class="text-muted small mt-2 mb-0">Current AI prediction: <strong>{{ ticket.ai_predicted_dept.name if ticket.ai_predicted_dept else 'Unknown' }}</strong> ({{ ticket.ai_confidence|round(1) }}% confidence)</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Comments -->
+    <div class="card-glass">
+      <div class="card-glass-header">
+        <h5><i class="bi bi-chat-dots me-2"></i>Comments</h5>
+        <span class="badge bg-secondary">{{ ticket.comments.count() }}</span>
+      </div>
+      <div class="card-glass-body">
+        {% for comment in ticket.comments.order_by(db.text('created_at asc')).all() %}
+        <div class="comment-item {% if comment.is_internal %}comment-internal{% endif %}">
+          <div class="comment-avatar">{{ comment.user.avatar_initials }}</div>
+          <div class="comment-body">
+            <div class="comment-header">
+              <strong>{{ comment.user.full_name }}</strong>
+              {% if comment.is_internal %}<span class="badge bg-warning ms-1 small">Internal</span>{% endif %}
+              <span class="text-muted small ms-2">{{ comment.created_at.strftime('%b %d at %I:%M %p') }}</span>
+            </div>
+            <p class="comment-text">{{ comment.content }}</p>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted">No comments yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: AI Panel + Meta -->
+  <div class="col-lg-5">
+    {% if ticket.ai_confidence %}
+    <div class="card-glass mb-4 ai-result-card">
+      <div class="card-glass-header">
+        <h5><i class="bi bi-robot me-2"></i>AI Analysis</h5>
+        <span class="badge {% if ticket.is_ai_prediction_correct %}bg-success{% elif ticket.is_ai_prediction_correct == False %}bg-danger{% else %}bg-secondary{% endif %}">
+          {% if ticket.is_ai_prediction_correct %}Correct{% elif ticket.is_ai_prediction_correct == False %}Corrected{% else %}Unverified{% endif %}
+        </span>
+      </div>
+      <div class="card-glass-body">
+        {% set color = ticket.department.color if ticket.department else '#6366f1' %}
+        <div class="ai-dept-display mb-3" style="border-left: 4px solid {{ color }};">
+          <small class="text-muted">Predicted Department</small>
+          <h5 style="color: {{ color }};">{{ ticket.ai_predicted_dept.name if ticket.ai_predicted_dept else 'Unknown' }}</h5>
+        </div>
+
+        {% set conf = ticket.ai_confidence %}
+        {% set conf_color = '#22c55e' if conf >= 80 else ('#f59e0b' if conf >= 60 else '#ef4444') %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between">
+            <small class="text-muted">Confidence</small>
+            <small style="color:{{ conf_color }}; font-weight:700;">{{ conf|round(1) }}%</small>
+          </div>
+          <div class="gauge-track"><div class="gauge-fill" style="width:{{ conf }}%;background:{{ conf_color }};"></div></div>
+        </div>
+
+        {% if keywords %}
+        <div class="mb-3">
+          <small class="text-muted fw-600">Keywords</small>
+          <div class="keywords-wrap mt-1">
+            {% for kw in keywords %}<span class="keyword-tag">{{ kw }}</span>{% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if all_probs %}
+        <div>
+          <small class="text-muted fw-600">Top Department Matches</small>
+          {% for dept_name, prob in all_probs.items() %}
+          <div class="dept-prob-item mt-2">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="small">{{ dept_name }}</span>
+              <span class="small fw-700">{{ (prob*100)|round(1) }}%</span>
+            </div>
+            <div class="prob-track"><div class="prob-fill" style="width:{{ prob*100 }}%;"></div></div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if pred_log %}
+        <div class="mt-3 pt-3 border-top border-secondary">
+          <small class="text-muted">Model: <strong>{{ pred_log.model_name }}</strong></small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Ticket Metadata -->
+    <div class="card-glass">
+      <div class="card-glass-header"><h6>Ticket Info</h6></div>
+      <div class="card-glass-body">
+        <dl class="info-list">
+          <dt>Ticket Number</dt><dd><code>{{ ticket.ticket_number }}</code></dd>
+          <dt>Created By</dt><dd>{{ ticket.creator.full_name if ticket.creator else '—' }}</dd>
+          <dt>Assigned To</dt><dd>{{ ticket.assignee.full_name if ticket.assignee else '— Unassigned —' }}</dd>
+          <dt>Created</dt><dd>{{ ticket.created_at.strftime('%b %d, %Y %I:%M %p') }}</dd>
+          <dt>Last Updated</dt><dd>{{ ticket.updated_at.strftime('%b %d, %Y') if ticket.updated_at else '—' }}</dd>
+          {% if ticket.resolved_at %}<dt>Resolved</dt><dd>{{ ticket.resolved_at.strftime('%b %d, %Y') }}</dd>{% endif %}
+          {% if ticket.resolution_time_hours %}<dt>Resolution Time</dt><dd>{{ ticket.resolution_time_hours }}h</dd>{% endif %}
+          {% if ticket.due_at %}<dt>Due</dt>
+          <dd class="{% if ticket.is_overdue %}text-danger{% endif %}">
+            {{ ticket.due_at.strftime('%b %d, %Y') }}
+            {% if ticket.is_overdue %}<span class="badge bg-danger ms-1">Overdue</span>{% endif %}
+          </dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
