@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="header">
+    <h1>Ticket History</h1>
+    <p>View all automatically assigned support tickets.</p>
+</div>
+
+<div class="card">
+    {% if tickets %}
+    <table>
+        <thead>
+            <tr>
+                <th>Ticket ID</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Assigned Team</th>
+                <th>Confidence</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr>
+                <td>#{{ ticket.id }}</td>
+                <td style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ ticket.description }}">
+                    {{ ticket.description }}
+                </td>
+                <td><span class="badge badge-{{ ticket.category }}">{{ ticket.category }}</span></td>
+                <td>{{ ticket.assigned_team }}</td>
+                <td>{{ ticket.confidence }}%</td>
+                <td>{{ ticket.created_at|date:"M d, Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No tickets found in the system yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+# Files to exclude from git
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+db.sqlite3
+*.egg-info/
+dist/
+build/
+.DS_Store
+Thumbs.db

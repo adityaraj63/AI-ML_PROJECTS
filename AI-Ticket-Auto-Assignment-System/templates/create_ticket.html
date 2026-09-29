@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="header">
+    <h1>Create a New Ticket</h1>
+    <p>Describe your issue, and our AI will automatically classify and assign it.</p>
+</div>
+
+{% if error %}
+<div class="alert alert-error">
+    {{ error }}
+</div>
+{% endif %}
+
+{% if success %}
+<div class="card" style="border-left: 4px solid var(--success-color);">
+    <div class="card-header">Ticket Submitted Successfully!</div>
+    
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+        <p><strong>Description:</strong> {{ ticket.description }}</p>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div>
+            <p style="color: #6c757d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">Predicted Category</p>
+            <p style="font-weight: 600; font-size: 1.1rem; margin-top: 0;">
+                <span class="badge badge-{{ ticket.category }}">{{ ticket.category }}</span>
+            </p>
+        </div>
+        <div>
+            <p style="color: #6c757d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">Confidence</p>
+            <p style="font-weight: 600; font-size: 1.1rem; margin-top: 0;">{{ ticket.confidence }}%</p>
+        </div>
+        <div style="grid-column: 1 / -1;">
+            <p style="color: #6c757d; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">Assigned Team</p>
+            <p style="font-weight: 600; font-size: 1.1rem; margin-top: 0; color: var(--primary-color);">{{ ticket.assigned_team }}</p>
+        </div>
+    </div>
+    
+    <div style="margin-top: 25px;">
+        <a href="{% url 'create_ticket' %}" class="btn">Submit Another Ticket</a>
+        <a href="{% url 'dashboard' %}" class="btn" style="background-color: #6c757d; margin-left: 10px;">Return to Dashboard</a>
+    </div>
+</div>
+{% else %}
+
+<div class="card">
+    <form method="post" action="{% url 'create_ticket' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="description">Ticket Description</label>
+            <textarea id="description" name="description" class="form-control" rows="5" placeholder="Please describe your issue in detail... (e.g. 'I was charged twice for my subscription.')" required></textarea>
+            <small style="color: #6c757d; display: block; margin-top: 8px;">The more details you provide, the better our AI can categorize your ticket.</small>
+        </div>
+        
+        <button type="submit" class="btn">Assign Ticket</button>
+    </form>
+</div>
+
+{% endif %}
+{% endblock %}
